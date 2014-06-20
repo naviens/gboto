@@ -11,7 +11,7 @@ class Instance():
         self.name = instance['name']
         self.self_link = instance['selfLink']
         # self.image = instance['image']
-        self.machine_type = instance['machineType']
+        # self.machine_type = instance['machineType']
         self.zone = instance['zone']
 
     def __repr__(self):

@@ -16,6 +16,13 @@ OAUTH2_STORAGE = 'oauth2.dat'
 GCE_SCOPE = 'https://www.googleapis.com/auth/compute'
 API_VERSION = 'v1'
 DEFAULT_ZONE = 'us-central1-a'
+DISK_TYPE = 'PERSISTENT'
+DEFAULT_MACHINE_TYPE = 'n1-standard-1'
+DEFAULT_NETWORK = 'default'
+DEFAULT_IMAGES = {
+    'debian': 'debian-7-wheezy-v20140606',
+    'centos': 'centos-6-v20131120'
+}
 
 
 class GCEConnection(object):
@@ -41,6 +48,7 @@ class GCEConnection(object):
 
         self.http = self.credentials.authorize(httplib2.Http())
         self.service = build("compute", API_VERSION, http=self.http)
+        self.project_url = '%s/%s' % (self.gce_url, self.project_id)
 
     # Instance Operations
 
@@ -61,8 +69,19 @@ class GCEConnection(object):
 
         return list_instances
 
-    def run_instance(self, name=None, image_name=None, machine_type=None,
-                     zone_name=None):
+    def run_instance(self,
+                     name,
+                     image,
+                     machine_type=DEFAULT_MACHINE_TYPE,
+                     zone=DEFAULT_ZONE,
+                     disk_name=None,
+                     network=DEFAULT_NETWORK,
+                     service_email=None,
+                     scopes=None,
+                     metadata=None,
+                     startup_script=None,
+                     startup_script_url=None,
+                     blocking=True):
         """
         Insert a Google Compute Engine instance into your cluster.
 
@@ -72,21 +91,32 @@ class GCEConnection(object):
         :rtype: :class:`boto.gce.operation.Operation`
         :return: A Google Compute Engine operation.
         """
-        body = {
-            'name': name,
-            'image': image_name,
-            'zone': zone_name,
-            'machineType': machine_type,
-            'networkInterfaces': [{
-                'network': self.default_network
-             }]
-        }
+        # Body dictionary is sent in the body of the API request.
+        instance = {}
+
+        instance['name'] = name
+        instance['image'] = image
+        instance['zone'] = zone
+        instance['machineType'] = '%s/zones/%s/machineTypes/%s' % (self.project_url, zone, machine_type)
+        instance['networkInterfaces'] = [{'accessConfigs': [{'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}],'network': '%s/global/networks/%s' % (self.project_url, network)}]
+        image_url = '%s/%s/global/images/%s' % (self.gce_url, 'debian-cloud', DEFAULT_IMAGES[image])
+
+        if not disk_name:
+            disk_name = name
+
+        instance['disks'] = [{
+            'boot': True,
+            'type': DISK_TYPE,
+            'initializeParams': {
+                'diskName': disk_name,
+                'sourceImage': image_url
+            }
+          }]
 
         gce_instance = self.service.instances().insert(project=self.project_id,
-                                                       body=body, zone=zone_name).execute(
+                                                       body=instance, zone=zone).execute(
                                                            http=self.http)
         return Instance(gce_instance)
-
 
     def terminate_instance(self, name=None):
         """
@@ -105,5 +135,23 @@ class GCEConnection(object):
 
     def reboot_instance(self):
         pass
+
+
+    # Image Operation
+
+
+    def get_all_images(self):
+        """
+        Retrieve all the Google Compute Engine images available to your
+        project.
+        """
+        list_gce_images = self.service.images().list(
+            project=self.google_project).execute(http=self.http)
+
+        list_images = []
+        for image in list_gce_images['items']:
+            list_images.append(Image(image))
+
+        return list_images
 
 
