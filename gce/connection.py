@@ -4,10 +4,10 @@ __author__ = 'naveen'
 
 import logging
 import httplib2
+import time
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run
-from apiclient.discovery import build
 
 from gce.instance import Instance
 from gce.image import Image
@@ -16,6 +16,11 @@ from gce.firewall import Firewall
 from gce.zone import Zone
 from gce.network import Network
 
+import traceback
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from httplib2 import HttpLib2Error
+from oauth2client.client import AccessTokenRefreshError
 
 OAUTH2_STORAGE = 'oauth2.dat'
 GCE_SCOPE = 'https://www.googleapis.com/auth/compute'
@@ -156,9 +161,34 @@ class GCEConnection(object):
                                  }
                              }]
 
-        gce_instance = self.service.instances().insert(project=self.project_id,
-                                                       body=instance, zone=zone).execute(
+        # Set optional fields with provided values.
+        if service_email and scopes:
+            instance['serviceAccounts'] = [{'email': service_email, 'scopes': scopes}]
+
+        # Set the instance metadata if provided.
+        instance['metadata'] = {}
+        instance['metadata']['items'] = []
+        if metadata:
+            instance['metadata']['items'].extend(metadata)
+
+        # Set the instance startup script if provided.
+        if startup_script:
+            startup_script_resource = {
+                'key': 'startup-script', 'value': open(startup_script, 'r').read()}
+            instance['metadata']['items'].append(startup_script_resource)
+
+        # Set the instance startup script URL if provided.
+        if startup_script_url:
+            startup_script_url_resource = {
+                'key': 'startup-script-url', 'value': startup_script_url}
+            instance['metadata']['items'].append(startup_script_url_resource)
+
+        gce_instance = self.service.instances().insert(project=self.project_id, body=instance, zone=zone).execute(
             http=self.http)
+
+        if gce_instance and blocking:
+            gce_instance = self._blocking_call(gce_instance)
+
         return Instance(gce_instance)
 
     def terminate_instance(self, name=None, zone=None):
@@ -173,8 +203,7 @@ class GCEConnection(object):
         """
         if not zone:
             zone = self.zone
-        gce_instance = self.service.instances().delete(project=self.project_id,
-                                                       instance=name, zone=zone).execute(
+        gce_instance = self.service.instances().delete(project=self.project_id, instance=name, zone=zone).execute(
             http=self.http)
         return gce_instance
 
@@ -221,8 +250,7 @@ class GCEConnection(object):
         :return: The Google Compute Engine Image specified, or None if the image
         is not found
         """
-        gce_image = self.service.images().get(project=self.project_id,
-                                              image=image_name).execute(
+        gce_image = self.service.images().get(project=self.project_id, image=image_name).execute(
             http=self.http)
         return Image(gce_image)
 
@@ -252,8 +280,7 @@ class GCEConnection(object):
         :return: The Google Compute Engine Zone specified, or None if the zone
         is not found
         """
-        gce_zone = self.service.zones().get(project=self.project_id,
-                                            zone=zone_name).execute(
+        gce_zone = self.service.zones().get(project=self.project_id, zone=zone_name).execute(
             http=self.http)
 
         return Zone(gce_zone)
@@ -286,8 +313,7 @@ class GCEConnection(object):
         :return: The Google Compute Engine Network specified, or None if the
         network is not found
         """
-        gce_network = self.service.networks().get(project=self.project_id,
-                                                  network=network_name).execute(
+        gce_network = self.service.networks().get(project=self.project_id, network=network_name).execute(
             http=self.http)
 
         return Network(gce_network)
@@ -319,11 +345,105 @@ class GCEConnection(object):
         :return: The Google Compute Engine Firewall specified, or None if the
         firewall is not found
         """
-        gce_firewall = self.service.firewalls().get(
-            project=self.project_id, firewall=firewall_name).execute(
+        gce_firewall = self.service.firewalls().get(project=self.project_id, firewall=firewall_name).execute(
             http=self.http)
 
         return Firewall(gce_firewall)
 
 
+    def _blocking_call(self, response):
+        """Blocks until the operation status is done for the given operation.
 
+        Args:
+          response: The response from the API call.
+
+        Returns:
+          Dictionary response representing the operation.
+        """
+
+        status = response['status']
+
+        while status != 'DONE' and response:
+            operation_id = response['name']
+            if 'zone' in response:
+                zone = response['zone'].rsplit('/', 1)[-1]
+                request = self.service.zoneOperations().get(
+                    project=self.project_id, zone=zone, operation=operation_id)
+            else:
+                request = self.service.globalOperations().get(
+                    project=self.project_id, operation=operation_id)
+            response = self._execute_request(request)
+            if response:
+                status = response['status']
+                logging.info(
+                    'Waiting until operation is DONE. Current status: %s', status)
+                if status != 'DONE':
+                    time.sleep(3)
+
+        return response
+
+    def _execute_request(self, request):
+
+        """Helper method to execute API requests.
+
+        Args:
+          request: The API request to execute.
+
+        Returns:
+          Dictionary response representing the operation if successful.
+
+        Raises:
+          ApiError: Error occurred during API call.
+        """
+
+        try:
+            response = request.execute()
+        except AccessTokenRefreshError, e:
+            logging.error('Access token is invalid.')
+            raise ApiError(e)
+        except HttpError, e:
+            logging.error('Http response was not 2xx.')
+            raise ApiError(e)
+        except HttpLib2Error, e:
+            logging.error('Transport error.')
+            raise ApiError(e)
+        except Exception, e:
+            logging.error('Unexpected error occured.')
+            traceback.print_stack()
+            raise ApiError(e)
+
+        return response
+
+
+class Error(Exception):
+    """Base class for exceptions in this module."""
+    pass
+
+
+class ApiError(Error):
+    """Error occurred during API call."""
+    pass
+
+
+class ApiOperationError(Error):
+    """Raised when an API operation contains an error."""
+
+    def __init__(self, error_list):
+        """Initialize the Error.
+
+        Args:
+          error_list: the list of errors from the operation.
+        """
+
+        super(ApiOperationError, self).__init__()
+        self.error_list = error_list
+
+    def __str__(self):
+        """String representation of the error."""
+
+        return repr(self.error_list)
+
+
+class DiskDoesNotExistError(Error):
+    """Disk to be used for instance boot does not exist."""
+    pass
