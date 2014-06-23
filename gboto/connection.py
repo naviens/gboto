@@ -9,12 +9,12 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run
 
-from gce.instance import Instance
-from gce.image import Image
-from gce.ramdisk import Ramdisk
-from gce.firewall import Firewall
-from gce.zone import Zone
-from gce.network import Network
+from gboto.instance import Instance
+from gboto.image import Image
+from gboto.ramdisk import Ramdisk
+from gboto.firewall import Firewall
+from gboto.zone import Zone
+from gboto.network import Network
 
 import traceback
 from apiclient.discovery import build
@@ -138,8 +138,6 @@ class GCEConnection(object):
         :type auto_delete: bool
         :param auto_delete: Delete the root disk when deleting the instance
 
-        :rtype: :class:`boto.gce.operation.Operation`
-        :return: A Google Compute Engine operation.
         """
         # Body dictionary is sent in the body of the API request.
         instance = dict()
@@ -198,8 +196,6 @@ class GCEConnection(object):
         :type name: string
         :param name: The name of the instance to terminate.
 
-        :rtype: :class:`boto.gce.operation.Operation`
-        :return: A Google Compute Engine operation.
         """
         if not zone:
             zone = self.zone
@@ -246,9 +242,6 @@ class GCEConnection(object):
         :type image_name: string
         :param image_name: The name of the Image to retrieve.
 
-        :rtype: :class:`boto.gce.image.Image`
-        :return: The Google Compute Engine Image specified, or None if the image
-        is not found
         """
         gce_image = self.service.images().get(project=self.project_id, image=image_name).execute(
             http=self.http)
@@ -276,9 +269,6 @@ class GCEConnection(object):
         :type zone_name: string
         :param zone_name: The name of the Zone to retrieve.
 
-        :rtype: :class:`boto.gce.zone.Zone`
-        :return: The Google Compute Engine Zone specified, or None if the zone
-        is not found
         """
         gce_zone = self.service.zones().get(project=self.project_id, zone=zone_name).execute(
             http=self.http)
@@ -309,9 +299,6 @@ class GCEConnection(object):
         :type network_name: string
         :param network_name: The name of the Network to retrieve.
 
-        :rtype: :class:`boto.gce.network.Network`
-        :return: The Google Compute Engine Network specified, or None if the
-        network is not found
         """
         gce_network = self.service.networks().get(project=self.project_id, network=network_name).execute(
             http=self.http)
@@ -341,9 +328,6 @@ class GCEConnection(object):
         :type firewall_name: string
         :param firewall_name: The name of the Firewall to retrieve.
 
-        :rtype: :class:`boto.gce.firewall.Firewall`
-        :return: The Google Compute Engine Firewall specified, or None if the
-        firewall is not found
         """
         gce_firewall = self.service.firewalls().get(project=self.project_id, firewall=firewall_name).execute(
             http=self.http)
