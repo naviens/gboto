@@ -9,7 +9,7 @@ Python Interface for managing GCE
 
 Here's an example:
 
-```
+```python
 client_secrets = 'client_secrets.json'
 project_id = 'myproject'
 zone = 'us-central1-a'
