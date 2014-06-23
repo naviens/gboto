@@ -26,4 +26,4 @@ InstanceTypes = ['f1-micro',
                  'n1-standard-8',
                  'n1-standard-8-d']
 
-Image_Projects = ['centos-cloud','rhel-cloud','suse-cloud','debian-cloud']
+Image_Projects = ['centos-cloud', 'rhel-cloud', 'suse-cloud', 'debian-cloud']

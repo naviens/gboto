@@ -1,8 +1,11 @@
 __author__ = 'naveen'
+
+
 class Image():
     """
     Represents a GCE Image.
     """
+
     def __init__(self, image):
         self.id = image.get('id')
         self.name = image.get('name')

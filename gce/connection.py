@@ -27,14 +27,14 @@ DEFAULT_NETWORK = 'default'
 
 
 class GCEConnection(object):
-
     def __init__(self, client_secrets, project_id, zone=None):
         logging.basicConfig(level=logging.INFO)
 
         self.project_id = project_id
         self.storage = Storage('oauth2.dat')
         self.credentials = self.storage.get()
-        self.default_network = "https://www.googleapis.com/compute/{0}/projects/google/networks/default".format(API_VERSION)
+        self.default_network = "https://www.googleapis.com/compute/{0}/projects/google/networks/default".format(
+            API_VERSION)
         self.gce_url = 'https://www.googleapis.com/compute/{0}/projects'.format(API_VERSION)
         if zone is None:
             self.zone = DEFAULT_ZONE
@@ -137,27 +137,28 @@ class GCEConnection(object):
         :return: A Google Compute Engine operation.
         """
         # Body dictionary is sent in the body of the API request.
-        instance = {}
+        instance = dict()
 
         instance['name'] = name
         instance['image'] = image_name
         instance['zone'] = zone
         instance['machineType'] = '%s/zones/%s/machineTypes/%s' % (self.project_url, zone, machine_type)
-        instance['networkInterfaces'] = [{'accessConfigs': [{'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}],'network': '%s/global/networks/%s' % (self.project_url, network)}]
+        instance['networkInterfaces'] = [{'accessConfigs': [{'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}],
+                                          'network': '%s/global/networks/%s' % (self.project_url, network)}]
         image_url = '%s/%s/global/images/%s' % (self.gce_url, image_cloud, image_name)
 
         instance['disks'] = [{
-            'autoDelete': auto_delete,
-            'boot': True,
-            'type': DISK_TYPE,
-            'initializeParams': {
-                'sourceImage': image_url
-            }
-          }]
+                                 'autoDelete': auto_delete,
+                                 'boot': True,
+                                 'type': DISK_TYPE,
+                                 'initializeParams': {
+                                     'sourceImage': image_url
+                                 }
+                             }]
 
         gce_instance = self.service.instances().insert(project=self.project_id,
                                                        body=instance, zone=zone).execute(
-                                                           http=self.http)
+            http=self.http)
         return Instance(gce_instance)
 
     def terminate_instance(self, name=None, zone=None):
@@ -174,7 +175,7 @@ class GCEConnection(object):
             zone = self.zone
         gce_instance = self.service.instances().delete(project=self.project_id,
                                                        instance=name, zone=zone).execute(
-                                                           http=self.http)
+            http=self.http)
         return gce_instance
 
     # Image Operation
@@ -203,7 +204,7 @@ class GCEConnection(object):
             zone = self.zone
 
         list_gce_ramdisks = self.service.disks().list(
-            project=self.project_id, zone= zone).execute(http=self.http)
+            project=self.project_id, zone=zone).execute(http=self.http)
 
         list_ramdisks = []
         for ramdisk in list_gce_ramdisks['items']:
@@ -222,10 +223,10 @@ class GCEConnection(object):
         """
         gce_image = self.service.images().get(project=self.project_id,
                                               image=image_name).execute(
-                                                  http=self.http)
+            http=self.http)
         return Image(gce_image)
 
-# Zone methods
+    # Zone methods
 
     def get_all_zones(self):
         """
@@ -253,7 +254,7 @@ class GCEConnection(object):
         """
         gce_zone = self.service.zones().get(project=self.project_id,
                                             zone=zone_name).execute(
-                                                http=self.http)
+            http=self.http)
 
         return Zone(gce_zone)
 
@@ -287,7 +288,7 @@ class GCEConnection(object):
         """
         gce_network = self.service.networks().get(project=self.project_id,
                                                   network=network_name).execute(
-                                                      http=self.http)
+            http=self.http)
 
         return Network(gce_network)
 
@@ -320,7 +321,7 @@ class GCEConnection(object):
         """
         gce_firewall = self.service.firewalls().get(
             project=self.project_id, firewall=firewall_name).execute(
-                http=self.http)
+            http=self.http)
 
         return Firewall(gce_firewall)
 

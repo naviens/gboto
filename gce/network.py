@@ -1,9 +1,11 @@
 __author__ = 'naveen'
 
+
 class Network():
     """
     Represents a GCE Network.
     """
+
     def __init__(self, network):
         self.id = network.get('id')
         self.kind = network.get('kind')

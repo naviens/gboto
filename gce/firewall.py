@@ -1,9 +1,11 @@
 __author__ = 'naveen'
 
+
 class Firewall():
     """
     Represents a GCE Firewall.
     """
+
     def __init__(self, firewall):
         self.id = firewall.get('id')
         self.kind = firewall.get('kind')

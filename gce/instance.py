@@ -1,9 +1,11 @@
 __author__ = 'naveen'
 
+
 class Instance():
     """
     Represents a GCE Instance.
     """
+
     def __init__(self, instance):
         self.id = instance.get('id')
         self.status = instance.get('status')

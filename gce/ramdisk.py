@@ -1,9 +1,11 @@
 __author__ = 'naveen'
 
+
 class Ramdisk():
     """
     Represents a GCE Ramdisk.
     """
+
     def __init__(self, ramdisk):
         self.id = ramdisk.get('id')
         self.name = ramdisk.get('name')
