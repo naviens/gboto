@@ -357,6 +357,47 @@ class GCEConnection(object):
 
         return Firewall(gce_firewall)
 
+    def create_firewall(self, name, network_name, rules=[], source_ips=[], source_tags=[]):
+        """
+
+        :type name: string
+        :param name: Name of the firewall
+
+        :type network_name: string
+        :param network_name: Name fo the network where firewall to be added
+
+        :type rules: list
+        :param rules: [('tcp','8080'),('tcp','4848')] list of tuples
+
+        :type source_ips: list
+        :param source_ips: ["0.0.0.0/0"]
+
+        :type source_tags: list
+        :param source_tags: ["apache-server","google-app"]
+
+        :return: object
+        """
+        parms = dict()
+        parms['name'] = name
+        parms['network'] = "http://www.googleapis.com/compute/v1/project/{0}/global/networks/{1}".format(self.project_id, network_name)
+        if rules:
+            allowed = []
+            for rule in rules:
+                rul = dict()
+                rul['IPProtocol'] = rule[0]
+                rul['ports'] = (rule[1]).split(",")
+                allowed.append(rul)
+
+        if source_ips:
+            parms["sourceRanges"] = source_ips
+
+        if source_tags:
+            parms["sourceTags"] = source_tags
+
+        gce_firewall = self.service.firewalls().insert(project=self.project_id, body=parms).execute(
+            http=self.http)
+        return gce_firewall
+
     # Snapshot methods
 
     def get_all_snapshots(self):
