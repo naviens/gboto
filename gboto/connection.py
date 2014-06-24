@@ -56,8 +56,7 @@ class GCEConnection(object):
         self.service = build("compute", API_VERSION, http=self.http)
         self.project_url = '%s/%s' % (self.gce_url, self.project_id)
 
-
-    # Instance Operations
+    # Instance methods
 
     def get_all_instances(self, list_filter=None):
         """
@@ -203,8 +202,7 @@ class GCEConnection(object):
             http=self.http)
         return gce_instance
 
-    # Image Operation
-
+    # Image methods
 
     def get_all_images(self):
         """
@@ -220,6 +218,18 @@ class GCEConnection(object):
                 list_images.append(Image(image))
 
         return list_images
+
+    def register_image(self):
+        pass
+
+    def deregister_image(self):
+        pass
+
+    def create_image(self):
+        pass
+
+    def reboot_instances(self):
+        pass
 
     def get_all_ramdisks(self, zone=None):
         """
@@ -305,6 +315,19 @@ class GCEConnection(object):
 
         return Network(gce_network)
 
+    # Address methods
+    def allocate_address(self):
+        pass
+
+    def associate_address(self):
+        pass
+
+    def disassociate_address(self):
+        pass
+
+    def release_address(self):
+        pass
+
     # Firewall methods
 
     def get_all_firewalls(self):
@@ -333,6 +356,29 @@ class GCEConnection(object):
             http=self.http)
 
         return Firewall(gce_firewall)
+
+    # Snapshot methods
+
+    def get_all_snapshots(self):
+        pass
+
+    def create_snapshot(self):
+        pass
+
+    def delete_snapshot(self):
+        pass
+
+    def copy_snapshot(self):
+        pass
+
+    def trim_snapshots(self):
+        pass
+
+    def get_snapshot_attribute(self):
+        pass
+
+    def modify_snapshot_attribute(self):
+        pass
 
 
     def _blocking_call(self, response):
