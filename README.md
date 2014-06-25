@@ -1,7 +1,7 @@
 gboto
 =====
 
-Python boto library for Google Compute Engine
+Python goto library for Google Compute Engine
 
 ###Usage
 
