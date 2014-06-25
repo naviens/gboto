@@ -1,4 +1,4 @@
-gboto
+goto
 =====
 
 Python goto library for Google Compute Engine
