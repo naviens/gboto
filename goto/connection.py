@@ -9,12 +9,12 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run
 
-from gboto.instance import Instance
-from gboto.image import Image
-from gboto.ramdisk import Ramdisk
-from gboto.firewall import Firewall
-from gboto.zone import Zone
-from gboto.network import Network
+from goto.instance import Instance
+from goto.image import Image
+from goto.ramdisk import Ramdisk
+from goto.firewall import Firewall
+from goto.zone import Zone
+from goto.network import Network
 
 import traceback
 from apiclient.discovery import build
