@@ -15,6 +15,8 @@ from goto.ramdisk import Ramdisk
 from goto.firewall import Firewall
 from goto.zone import Zone
 from goto.network import Network
+from goto.snapshot import Snapshot
+from goto.address import Address
 
 import traceback
 from apiclient.discovery import build
@@ -316,17 +318,47 @@ class GCEConnection(object):
         return Network(gce_network)
 
     # Address methods
-    def allocate_address(self):
-        pass
 
-    def associate_address(self):
+    def get_all_address(self, region):
+        list_gce_address = self.service.addresses().list(
+            project=self.project_id, region=region).execute(http=self.http)
+
+        list_address = []
+        for address in list_gce_address['items']:
+            list_address.append(Address(address))
+
+        return list_address
+
+    def get_address(self, address_name, region):
+        """
+        Shortcut method to retrieve a specific network.
+
+        :type address_name: string
+        :param address_name: The name of the Address to retrieve.
+
+        """
+        gce_address = self.service.addresses().get(project=self.project_id, address=address_name, region= region).execute(
+            http=self.http)
+
+        return Address(gce_address)
+
+    def allocate_address(self, name, instance_name, region):
+        parms = dict()
+        parms['name'] = name
+        gce_address = self.service.addresses().insert(project=self.project_id, region=region, body=parms).execute(
+            http=self.http)
+        return gce_address
+
+    def associate_address(self, region, name, instance_name):
         pass
 
     def disassociate_address(self):
         pass
 
-    def release_address(self):
-        pass
+    def release_address(self, name, region):
+        gce_address = self.service.addresses().delete(project=self.project_id, region=region, address=name).execute(
+            http=self.http)
+        return gce_address
 
     # Firewall methods
 
@@ -401,13 +433,43 @@ class GCEConnection(object):
     # Snapshot methods
 
     def get_all_snapshots(self):
-        pass
+        list_gce_snapshots = self.service.snapshots().list(
+            project=self.project_id).execute(http=self.http)
+
+        list_snapshots = []
+        for snapshots in list_gce_snapshots['items']:
+            list_snapshots.append(Snapshot(snapshots))
+
+        return list_snapshots
+
+    def get_snapshot(self, snapshot_name):
+        """
+        Shortcut method to retrieve a specific snapshot.
+
+        :type snapshot_name: str
+        :param snapshot_name: The name of the snapshot to retrieve.
+
+        """
+        gce_snapshot = self.service.snapshots().get(project=self.project_id, snapshot=snapshot_name).execute(
+            http=self.http)
+
+        return Snapshot(gce_snapshot)
 
     def create_snapshot(self):
         pass
 
-    def delete_snapshot(self):
-        pass
+    def delete_snapshot(self, snapshot_name):
+        """
+        Shortcut method to retrieve a specific snapshot.
+
+        :type snapshot_name: str
+        :param snapshot_name: The name of the snapshot to retrieve.
+
+        """
+        gce_snapshot = self.service.snapshots().delete(project=self.project_id, snapshot=snapshot_name).execute(
+            http=self.http)
+
+        return self._blocking_call(gce_snapshot)
 
     def copy_snapshot(self):
         pass
