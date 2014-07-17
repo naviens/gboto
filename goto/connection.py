@@ -455,8 +455,24 @@ class GCEConnection(object):
 
         return Snapshot(gce_snapshot)
 
-    def create_snapshot(self):
-        pass
+    def create_snapshot(self, snapshot_name, disk_name, zone):
+        """
+        Shortcut method to create a specific snapshot.
+
+        :type snapshot_name: str
+        :param snapshot_name: The name of the snapshot to create.
+
+        """
+        parms = dict()
+        parms['name'] = snapshot_name
+        if zone:
+            self.zone = zone
+
+        gce_snapshot = self.service.disks().createSnapshot(project=self.project_id, zone= self.zone, disk=disk_name, body=parms).execute(
+            http=self.http)
+        gce_snapshot = self._blocking_call(gce_snapshot)
+
+        return Snapshot(gce_snapshot)
 
     def delete_snapshot(self, snapshot_name):
         """
@@ -482,6 +498,24 @@ class GCEConnection(object):
 
     def modify_snapshot_attribute(self):
         pass
+
+    # Disk Methods
+
+    def get_all_disks(self):
+        pass
+
+    def get_disk(self):
+        pass
+
+    def delete_disk(self):
+        pass
+
+    def create_disk(self):
+        pass
+
+    def create_root_disk(self):
+        pass
+
 
 
     def _blocking_call(self, response):
